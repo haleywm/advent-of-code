@@ -12,7 +12,7 @@ static VALS: [&str; 7] = [
     "ecl",
     "pid"
 ];
-static REGEX_STRICT: [&str; 7] = [
+static REGEX_STRICT: &'static [&str] = &[
     r"\bbyr:(19[2-9][0-9]|200[0-2])\b",
     r"\biyr:20(1[0-9]|20)\b",
     r"\beyr:20(2[0-9]|30)\b",
@@ -36,7 +36,7 @@ pub fn valid_passport(data: &str) -> bool {
 
 pub fn valid_passport_strict(data: &str) -> bool {
     lazy_static! {
-        static ref RE: RegexSet = RegexSet::new(&REGEX_STRICT).unwrap();
+        static ref RE: RegexSet = RegexSet::new(REGEX_STRICT).unwrap();
     }
 
     RE.matches(data).iter().count() == REGEX_STRICT.len()

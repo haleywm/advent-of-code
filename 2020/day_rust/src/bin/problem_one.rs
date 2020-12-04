@@ -1,3 +1,8 @@
+use std::fs;
+use std::io::{self, BufRead};
+
 fn main() {
-    println!("Hello, world!");
+    let file = fs::File::open("input.txt").expect("Invalid Filename");
+    let lines = io::BufReader::new(file)
+        .lines();
 }

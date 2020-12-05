@@ -1,14 +1,18 @@
+use day_7::{run_intcode, string_to_intcode, OwnOrRef::*, BUF_SIZE};
+use itertools::Itertools;
 use std::fs;
 use std::io::{self, BufRead};
-use day_5::{string_to_intcode, execute_intcode, BUF_SIZE};
-use itertools::Itertools;
+use std::sync::mpsc;
 
-fn main() -> std::io::Result<()> {
+fn main() {
     let file = fs::File::open("input.txt").expect("Invalid Filename");
     let mut line = String::new();
-    io::BufReader::new(file).read_line(&mut line)?;
+    io::BufReader::new(file)
+        .read_line(&mut line)
+        .expect("Couldn't read file");
     let intcode = string_to_intcode(line.trim()).unwrap();
-    let result = (0..5).permutations(5)
+    let result = (0..5)
+        .permutations(5)
         .map(|x| {
             let mut prev = 0;
             for mode in x {
@@ -16,18 +20,19 @@ fn main() -> std::io::Result<()> {
             }
             prev
         })
-        .max().unwrap();
-    
+        .max()
+        .unwrap();
+
     println!("{}", result);
-    Ok(())
 }
 
 fn run_input(last_val: i32, mode: i32, line: [i32; BUF_SIZE]) -> i32 {
-    let input = format!("{}\n{}\n", mode, last_val);
-    let mut cursor = io::Cursor::new(input);
-    let mut output: Vec<u8> = Vec::new();
-    execute_intcode(line.clone(), &mut cursor, &mut output);
-    let output = String::from_utf8(output).unwrap();
-    //println!("{}", output);
-    output.trim().parse().unwrap()
+    let (in_write, in_read) = mpsc::channel();
+    let (out_write, out_read) = mpsc::channel();
+    in_write.send(mode).unwrap();
+    in_write.send(last_val).unwrap();
+    run_intcode(line.clone(), Own(in_read), Own(out_write))
+        .join()
+        .unwrap();
+    out_read.recv().unwrap()
 }

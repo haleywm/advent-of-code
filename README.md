@@ -2,6 +2,6 @@
 
 These are my submissions for advent of code.
 
-Playing around with some different programming languages to get some more practice in different languages.
+Playing around with some different programming languages to get some more practice in different languages. Mostly Rust, at the moment, although as I more comfortable in that I'll consider other options and ways to explore stuff while problem solving.
 
-Only doing 2020 for the moment, but I may expand and do more as time goes on.
+Working on 2019 and 2020 as they come out at the moment.

@@ -11,11 +11,6 @@ pub enum OwnOrRef<T> {
     Ref(Arc<Mutex<T>>),
 }
 
-pub enum OptionalSync<T> {
-    No(mpsc::Sender<T>),
-    Yes(mpsc::SyncSender<T>),
-}
-
 pub fn string_to_intcode(instructions: &str) -> Option<[i64; BUF_SIZE]> {
     // Takes a string of comma separated ints, converts to a vector of ints
     let mut register: [i64; BUF_SIZE] = [0; BUF_SIZE];
@@ -88,13 +83,27 @@ pub fn std_intcode(input: &str) -> thread::JoinHandle<()> {
 }
 
 pub fn run_intcode_io(
-    register: [i64; BUF_SIZE]
+    register: [i64; BUF_SIZE],
 ) -> (
     mpsc::Sender<i64>,
     mpsc::Receiver<i64>,
-    thread::JoinHandle<()>
+    thread::JoinHandle<()>,
 ) {
     let (prog_in, prog_read) = mpsc::channel();
+    let (prog_write, prog_out) = mpsc::channel();
+    let prog = run_intcode(register, Own(prog_read), Own(prog_write));
+    (prog_in, prog_out, prog)
+}
+
+// Same as above except that the sender waits for something to be read, which opens up additional possibilities
+pub fn run_intcode_io_synced(
+    register: [i64; BUF_SIZE],
+) -> (
+    mpsc::SyncSender<i64>,
+    mpsc::Receiver<i64>,
+    thread::JoinHandle<()>,
+) {
+    let (prog_in, prog_read) = mpsc::sync_channel(0);
     let (prog_write, prog_out) = mpsc::channel();
     let prog = run_intcode(register, Own(prog_read), Own(prog_write));
     (prog_in, prog_out, prog)

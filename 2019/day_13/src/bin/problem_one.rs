@@ -38,18 +38,10 @@ fn main() {
         }
     }
     // Previous structure is there for rendering, no need for this question (hopefully it was worth the effort in the next part)
-    let result: i32 = screen.iter()
-        .map(|x| -> i32 {
-            x.iter().map(|x| {
-                if *x == '░' {
-                    1
-                }
-                else {
-                    0
-                }
-            }).sum()
-        })
+    let result: i32 = screen
+        .iter()
+        .map(|x| -> i32 { x.iter().map(|x| if *x == '░' { 1 } else { 0 }).sum() })
         .sum();
-    
+
     println!("{}", result);
 }

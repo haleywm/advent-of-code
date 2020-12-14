@@ -1,21 +1,19 @@
 use day_13::{run_intcode_io, string_to_intcode};
 use std::fs;
-use std::io::{self, BufRead, Write, stdout, stdin};
+use std::io::{self, stdin, stdout, BufRead, Write};
+use std::sync::{Arc, Mutex};
+use std::thread;
 use termion::clear;
 use termion::cursor;
-use termion::raw::IntoRawMode;
-use termion::input::TermRead;
 use termion::event::Key;
-use std::thread;
-use std::sync::{Arc, Mutex};
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
 
 fn main() {
     let file = fs::File::open("input.txt").expect("Invalid Filename");
     let mut line = String::new();
     // Have to do this due to multiple read_line defs
-    BufRead::read_line(
-        &mut io::BufReader::new(file), &mut line
-    ).expect("Couldn't read file");
+    BufRead::read_line(&mut io::BufReader::new(file), &mut line).expect("Couldn't read file");
 
     let mut intcode = string_to_intcode(&line.trim()).unwrap();
     intcode[0] = 2;
@@ -31,12 +29,11 @@ fn main() {
     let score_ref = Arc::clone(&score);
     let stdout_ref = Arc::clone(&stdout);
     thread::spawn(move || {
-        
         while let Ok(x) = game_out.recv() {
             // Data should come in 3's, so reading the othe 2 values in and panicing if they aren't provided
             let y = game_out.recv().unwrap();
             let tile = game_out.recv().unwrap();
-    
+
             if x >= 0 {
                 let tile = match tile {
                     0 => ' ',
@@ -46,19 +43,30 @@ fn main() {
                     4 => '',
                     x => panic!("Unexpected number: {}", x),
                 };
-                writeln!(stdout_ref.lock().unwrap(), "{}{}", cursor::Goto((x + 1) as u16, (y + 1) as u16), tile).unwrap();
-            }
-            else {
+                writeln!(
+                    stdout_ref.lock().unwrap(),
+                    "{}{}",
+                    cursor::Goto((x + 1) as u16, (y + 1) as u16),
+                    tile
+                )
+                .unwrap();
+            } else {
                 if x == -1 {
                     let mut score = score_ref.lock().unwrap();
                     *score = tile;
-                    writeln!(stdout_ref.lock().unwrap(), "{}{}", cursor::Goto(50, 2), score).unwrap();
+                    writeln!(
+                        stdout_ref.lock().unwrap(),
+                        "{}{}",
+                        cursor::Goto(50, 2),
+                        score
+                    )
+                    .unwrap();
                 }
             }
             //io::stdout().flush().unwrap();
         }
     });
-    
+
     let stdin = stdin();
     for c in stdin.keys() {
         // Getting currently held keys

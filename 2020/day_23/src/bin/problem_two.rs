@@ -1,77 +1,83 @@
 use std::fs;
-use std::collections::VecDeque;
 
 fn main() {
     const CUPS: usize = 1000000;
     let input = fs::read_to_string("input.txt").unwrap();
-    let mut cups = VecDeque::with_capacity(CUPS);
-    for label in input.chars() {
-        cups.push_back(label.to_digit(10).unwrap() as i32);
+    let mut cups = vec![0; CUPS + 1];
+    {
+        let mut prev = 0;
+        // Index 0 points to the start of the list, every other index shows what comes after that number
+        let mut total = 0;
+        for label in input.chars() {
+            let val = label.to_digit(10).unwrap() as usize;
+            cups[prev] = val;
+            prev = val;
+            total += 1;
+        }
+        // If there's extra cups to insert, make the last number in the list point to the beginning of these numbers
+        if total <= CUPS {
+            cups[prev] = total + 1;
+        }
+        // Otherwise, make it point back to the beginning
+        else {
+            cups[prev] = cups[0];
+        }
+        for i in (total + 1)..CUPS {
+            cups[i] = i + 1;
+        }
+        // Lastly, making the last number wrap around
+        if total <= CUPS {
+            cups[CUPS] = cups[0];
+        }
     }
-    for i in (cups.len() + 1)..=CUPS {
-        cups.push_back(i as i32);
-    }
-    println!("Finished placing cups");
 
     const MOVES: usize = 10000000;
 
-    assert!(cups.len() >= 5);
+    // The current number we're going with
+    let mut cur = cups[0];
 
-    let max_val = CUPS as i32;
-    
-    let mut last_dest: Option<usize> = None;
-
-    for go in 0..MOVES {
-        if go % (MOVES / 100) == 0 {
-            println!("{}%", go * 100 / MOVES);
-        }
-
-        let cur = cups.pop_front().unwrap();
-        let mut next_cups = Vec::with_capacity(3);
-        for _ in 0..3 {
-            next_cups.push(cups.pop_front().unwrap());
-        }
+    for _ in 0..MOVES {
         
+        let val_one = cups[cur];
+        let val_two = cups[val_one];
+        let val_thr = cups[val_two];
+
         let mut goal = 0;
-        'goal_find: for i in 1..=3 {
-            if cur - i < 1 {
+        for i in 1..=4 {
+            if cur.saturating_sub(i) < 1 {
                 // Looking for something larger instead
                 for j in 0..=3 {
-                    if !next_cups.contains(&(max_val - j)) && cur != max_val - j {
-                        // Found goal
-                        goal = max_val - j;
-                        break 'goal_find;
+                    let comp = CUPS - j;
+                    if val_one != comp && val_two != comp && val_thr != comp && cur != comp {
+                        goal = comp;
+                        break;
                     }
                 }
+                break;
             }
 
-            if !next_cups.contains(&(cur - i)) {
+            let comp = cur - i;
+            if val_one != comp && val_two != comp && val_thr != comp {
                 // Found goal
-                goal = cur - i;
+                goal = comp;
                 break;
             }
         }
-        let dest = if last_dest.unwrap_or(CUPS) > CUPS / 2 {
-            // Last thing was on the larger end of the scale, so look in reverse order
-            cups.iter().enumerate().rev().find(|x| *x.1 == goal).unwrap().0 + 1
-        }
-        else {
-            cups.iter().enumerate().find(|x| *x.1 == goal).unwrap().0 + 1
-        };
-        last_dest = Some(dest);
+        assert_ne!(goal, 0);
 
-        //println!("{}, {}", goal, dest);
-        for label in next_cups.into_iter().rev() {
-            cups.insert(dest, label)
-            //cups.push_front(label);
-        }
-        cups.push_back(cur);
+        
+        // Found it
+        cups[cur] = cups[val_thr];
+        cups[val_thr] = cups[goal];
+        cups[goal] = val_one;
+
+        cur = cups[cur];
     }
-    //println!("{:?}", cups);
-    // Lastly, printing the numbers as specified
-    let idx = cups.iter().enumerate().find(|x| *x.1 == 1).unwrap().0 + 1;
     
-    let val_one = cups[(idx + 1) % cups.len()] as u64;
-    let val_two = cups[(idx + 2) % cups.len()] as u64;
-    println!("{} * {} = {}", val_one, val_two, val_one * val_two);
+    // Lastly, printing output
+    let val_one = cups[1];
+    let val_two = cups[val_one];
+
+    let result = val_one as u64 * val_two as u64;
+    println!("{} * {}: {}", val_one, val_two, result);
 }

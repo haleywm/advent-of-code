@@ -1,10 +1,10 @@
 use std::fs;
-use std::collections::VecDeque;
+use std::collections::LinkedList;
 
 fn main() {
     const CUPS: usize = 1000000;
     let input = fs::read_to_string("input.txt").unwrap();
-    let mut cups = VecDeque::with_capacity(CUPS);
+    let mut cups = LinkedList::new();
     for label in input.chars() {
         cups.push_back(label.to_digit(10).unwrap() as i32);
     }
@@ -27,9 +27,9 @@ fn main() {
         }
 
         let cur = cups.pop_front().unwrap();
-        let mut next_cups = Vec::with_capacity(3);
+        let mut next_cups = LinkedList::new();
         for _ in 0..3 {
-            next_cups.push(cups.pop_front().unwrap());
+            next_cups.push_back(cups.pop_front().unwrap());
         }
         
         let mut goal = 0;
@@ -60,18 +60,20 @@ fn main() {
         };
         last_dest = Some(dest);
 
+        let mut list_back = cups.split_off(dest);
+        cups.append(&mut next_cups);
+        cups.append(&mut list_back);
         //println!("{}, {}", goal, dest);
-        for label in next_cups.into_iter().rev() {
-            cups.insert(dest, label)
-            //cups.push_front(label);
-        }
+        
         cups.push_back(cur);
     }
     //println!("{:?}", cups);
     // Lastly, printing the numbers as specified
-    let idx = cups.iter().enumerate().find(|x| *x.1 == 1).unwrap().0 + 1;
+    let mut scan = cups.into_iter().cycle();
+    // Forwarding to where 1 is
+    scan.find(|x| *x == 1);
     
-    let val_one = cups[(idx + 1) % cups.len()] as u64;
-    let val_two = cups[(idx + 2) % cups.len()] as u64;
+    let val_one = scan.next().unwrap();
+    let val_two = scan.next().unwrap();
     println!("{} * {} = {}", val_one, val_two, val_one * val_two);
 }

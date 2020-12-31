@@ -7,6 +7,8 @@ const TILE_SIZE: usize = 10;
 // Tile number, pos (rotation, flipped, x, y), value
 //type Tile = (u64, Option<(usize, usize, i32, i32)>, [[bool; TILE_SIZE]; TILE_SIZE]);
 
+// ALlowing dead code because num is important in some versions
+#[allow(dead_code)]
 struct Tile {
     num: u64,
     pos: RefCell<Option<TilePos>>,
@@ -34,11 +36,11 @@ fn main() {
         // Format: Tile {num}:, so take th
         let tile_num = tile_info[5..tile_info.len() - 1].parse().unwrap();
         let mut tile_contents = [[false; TILE_SIZE]; TILE_SIZE];
-        for i in 0..TILE_SIZE {
+        for y in 0..TILE_SIZE {
             let next_line = lines.next().unwrap().unwrap();
             assert_eq!(TILE_SIZE, next_line.len());
-            for (j, item) in next_line.as_bytes().iter().enumerate() {
-                tile_contents[i][j] = *item == b'#';
+            for (x, item) in next_line.as_bytes().iter().enumerate() {
+                tile_contents[x][y] = *item == b'#';
             }
         }
         // Insert the created tile
@@ -55,6 +57,9 @@ fn main() {
     // Pieces can match to 1 of 4 sides, and have 1 of 4 rotations. In addition, they can be flipped either horizontally, vertically, or neither
     // (A flip in both directions is equivalent to a double rotation)
     *tiles[0].pos.borrow_mut() = Some(TilePos {rotation: 0, flip_vert: false, flip_hor: false, x: 0, y: 0});
+
+    let mut min_x = 0;
+    let mut min_y = 0;
 
     let mut to_eval = vec![0];
     
@@ -84,10 +89,12 @@ fn main() {
                         let cur_pos = cur_pos.as_ref().unwrap();
                         // Add the sides being compared from and to and subtract 2 to get relative rotation (i.e. a comp from side 1 to side 3 would match with 0 rot)
                         // Then add it to parent rotation then modulus
-                        let mut rotation = ((((cur_pos.rotation as i32 + side_from as i32 - side_to as i32 - 2) % 4) + 4) % 4) as usize;
+                        let rel_roation = ((((side_from as i32 - side_to as i32 - 2) % 4) + 4) % 4) as usize;
+                        let mut rotation = (cur_pos.rotation + rel_roation) % 4;
                         
-                        let mut flip_vert = ((!forwards) && (side_from == 1 || side_from == 3)) ^ cur_pos.flip_vert;
-                        let mut flip_hor = ((!forwards) && (side_from == 0 || side_from == 2)) ^ cur_pos.flip_hor;
+                        // If relative rotation is 2, the reverse is because they're facing opposite directions
+                        let mut flip_vert = (((!forwards) ^ (rel_roation == 2)) && (side_from == 1 || side_from == 3)) ^ cur_pos.flip_vert;
+                        let mut flip_hor = (((!forwards) ^ (rel_roation == 2)) && (side_from == 0 || side_from == 2)) ^ cur_pos.flip_hor;
                         if flip_vert && flip_hor {
                             // Flipped both ways, just rotate 180 and call it a day
                             flip_vert = false;
@@ -99,13 +106,13 @@ fn main() {
                         // This part isn't too complex, just get the side the parent comes from, and apply it's flip if needed
                         let side_from_adj = (side_from + cur_pos.rotation) % 4;
                         let (x, y) = if (side_from_adj == 0 && !cur_pos.flip_vert) || (side_from_adj == 2 && cur_pos.flip_vert) {
-                            (cur_pos.x, cur_pos.y + 1)
+                            (cur_pos.x, cur_pos.y - 1)
                         }
                         else if (side_from_adj == 1 && !cur_pos.flip_hor) || (side_from_adj == 3 && cur_pos.flip_hor) {
                             (cur_pos.x + 1, cur_pos.y)
                         }
                         else if (side_from_adj == 2 && !cur_pos.flip_vert) || (side_from_adj == 0 && cur_pos.flip_vert) {
-                            (cur_pos.x, cur_pos.y - 1)
+                            (cur_pos.x, cur_pos.y + 1)
                         }
                         else if (side_from_adj == 3 && !cur_pos.flip_hor) || (side_from_adj == 1 && cur_pos.flip_hor) {
                             (cur_pos.x - 1, cur_pos.y)
@@ -113,6 +120,14 @@ fn main() {
                         else {
                             panic!("Oops")
                         };
+
+                        if x < min_x {
+                            min_x = x;
+                        }
+                        if y < min_y {
+                            min_y = y;
+                        }
+
                         *comp_val.pos.borrow_mut() = Some(TilePos {rotation, flip_vert, flip_hor, x, y});
                         println!("From {}: {}: ({}:{}) {:?}", cur_val.num, comp_val.num, side_from, side_to, comp_val.pos.borrow());
                         to_eval.push(comp_idx);
@@ -122,6 +137,165 @@ fn main() {
             }
         }
     }
+
+    // Now that that mess is out the way, making a single vector of everything with the edge pieces removed
+    let tile_res = TILE_SIZE - 2;
+    let img_res = image_size * tile_res;
+    let mut img_vec = vec![vec![false; img_res]; img_res];
+
+    for tile in tiles.into_iter() {
+        let pos = tile.pos.borrow();
+        let pos = pos.as_ref().unwrap();
+        let x_offset = (pos.x - min_x) as usize * tile_res;
+        let y_offset = (pos.y - min_y) as usize * tile_res;
+        // Leaving out the edges
+        for x in 1..=tile_res {
+            for y in 1..=tile_res {
+                // Rotating as needed
+                let (to_x, to_y) = translate_pos(x - 1, y - 1, pos.rotation, tile_res, tile_res, pos.flip_hor, pos.flip_vert);
+
+                let to_x = x_offset + to_x;
+                let to_y = y_offset + to_y;
+
+                img_vec[to_x][to_y] = tile.val[x][y];
+            }
+        }
+        /*
+        println!("{}:", tile.num);
+
+        for y in y_offset..y_offset+tile_res {
+            for x in x_offset..x_offset+tile_res {
+                print!("{}", if img_vec[x][y] { '#' } else { '.' });
+            }
+            println!();
+        }
+        */
+    }
+    // Print
+    /*
+    for y in 0..img_res {
+        for x in 0..img_res {
+            print!("{}", if img_vec[x][y] { '#' } else { '.' });
+        }
+        println!();
+    }
+    */
+
+    // Finally, looking for sea monsters
+    let monster_shape = vec![
+        (0, 1),
+        (1, 2),
+        (4, 2),
+        (5, 1),
+        (6, 1),
+        (7, 2),
+        (10, 2),
+        (11, 1),
+        (12, 1),
+        (13, 2),
+        (16, 2),
+        (17, 1),
+        (18, 0),
+        (18, 1),
+        (19, 1),
+    ];
+    let shape_width = 20;
+    let shape_height = 3;
+
+    let mut orientation: Option<TilePos> = None;
+
+    // First scanning in any direction until I find the correct orientation
+    'or_check: for y in 0..img_res {
+        for x in 0..img_res {
+            // Trying every possible transformation until the right one is found
+            for rot in 0..4 {
+                'next_pos: for (flip_hor, flip_vert) in vec![(false, false), (true, false), (false, true)] {
+                    for point in monster_shape.iter() {
+                        let (check_x, check_y) = translate_pos(point.0, point.1, rot, shape_width, shape_height, flip_hor, flip_vert);
+                        let check_x = check_x + x;
+                        let check_y = check_y + y;
+                        if check_x < img_res && check_y < img_res {
+                            // Fits within shape
+                            if !img_vec[check_x][check_y] {
+                                // Doesn't fit
+                                continue 'next_pos;
+                            }
+                        }
+                        else {
+                            continue 'next_pos;
+                        }
+                    }
+                    // Found a monster!
+                    orientation = Some(TilePos { rotation: rot, flip_vert, flip_hor, x: 0, y: 0 });
+                    break 'or_check;
+                }
+            }
+        }
+    }
+    let mut monst_count = 0;
+    let orientation = orientation.expect("Couldn't find any dragons on any orientation");
+    for y in 0..img_res-shape_height+1 {
+        'next_seek_pos: for x in 0..img_res-shape_height+1 {
+            for point in monster_shape.iter() {
+                let (check_x, check_y) = translate_pos(point.0, point.1, orientation.rotation, shape_width, shape_height, orientation.flip_hor, orientation.flip_vert);
+                let check_x = check_x + x;
+                let check_y = check_y + y;
+                if check_x < img_vec.len() && check_y < img_vec[0].len() {
+                    // Fits within shape
+                    if !img_vec[check_x][check_y] {
+                        // Doesn't fit
+                        continue 'next_seek_pos;
+                    }
+                }
+                else {
+                    continue 'next_seek_pos;
+                }
+            }
+            // Found a monster!
+            monst_count += 1;
+        }
+    }
+    let result: usize = img_vec.iter()
+        .map(|x| x.iter().filter(|y| **y).count())
+        .sum::<usize>() - monst_count * 15;
+    println!("{}", result);
+}
+
+fn translate_pos(x: usize, y: usize, rot: usize, width: usize, height: usize, flip_hor: bool, flip_vert: bool) -> (usize, usize) {
+    // Rotating as needed
+    let (to_x, to_y) = match rot {
+        0 => (x, y),
+        1 => (height - 1 - y, x),
+        2 => (width - 1 - x, height - 1 - y),
+        3 => (y, width - 1 - x),
+         _ => panic!("No"),
+    };
+    // Then lastly transforming by flip
+    let to_x = if !flip_hor {
+        to_x
+    }
+    else {
+        if rot == 0 || rot == 2 {
+            width - 1 - to_x
+        }
+        else {
+            // Using height's boundries
+            height - 1 - to_x
+        }
+    };
+    let to_y = if !flip_vert {
+        to_y
+    }
+    else {
+        if rot == 0 || rot == 2 {
+            height - 1 - to_y
+        }
+        else {
+            // Using width's boundries
+            width - 1 - to_y
+        }
+    };
+    (to_x, to_y)
 }
 
 fn convert_pos(dir: usize, idx: usize, forwards: bool) -> (usize, usize) {
@@ -134,13 +308,13 @@ fn convert_pos(dir: usize, idx: usize, forwards: bool) -> (usize, usize) {
     };
     match dir {
         // Top
-        0 => (0, idx),
+        0 => (idx, 0),
         // Right
-        1 => (idx, TILE_SIZE - 1),
+        1 => (TILE_SIZE - 1, idx),
         // Bottom
-        2 => (TILE_SIZE - 1, idx),
+        2 => (idx, TILE_SIZE - 1),
         // Left
-        3 => (idx, 0),
+        3 => (0, idx),
         _ => panic!("No"),
     }
 }

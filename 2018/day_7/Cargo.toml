@@ -1,5 +1,5 @@
 [package]
-name = "day_rust"
+name = "day_7"
 version = "0.1.0"
 authors = ["haleywm <haleywrkmn@gmail.com>"]
 edition = "2018"

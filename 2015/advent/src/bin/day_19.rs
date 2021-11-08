@@ -26,15 +26,37 @@ fn main() {
     // Now to generate every possible variation
     let mut variations: HashSet<String> = HashSet::new();
 
-    for (from, to) in replacements {
+    for (from, to) in replacements.iter() {
         // Rust doesn't have a built-in find iterator, but as the names can't have special regex chars I can just use regex
         let finder = Regex::new(&from).unwrap();
         for repr in finder.find_iter(&med) {
             let mut new = med.clone();
-            new.replace_range(repr.range(), &to);
+            new.replace_range(repr.range(), to);
             variations.insert(new);
         }
     }
 
     println!("Total possibilities: {}", variations.len());
+
+    // Now to find a reverse
+    // Cheated and looked the info up online, I should have studied the input a lot more :(
+    let element_count = med.matches(|c: char| c.is_ascii_uppercase()).count();
+    let rn_count = med.matches("Rn").count();
+    let ar_count = med.matches("Ar").count();
+    let y_count = med.matches("Y").count();
+    let fin_tokens = replacements
+        .iter()
+        .filter_map(|(from, to)| {
+            if from != "e" {
+                None
+            }
+            else {
+                Some(to.matches(|c: char| c.is_ascii_uppercase()).count())
+            }
+        })
+        .min()
+        .unwrap();
+    let changes_needed = element_count - rn_count - ar_count - y_count * 2 - fin_tokens + 1;
+
+    println!("Changes needed: {}", changes_needed);
 }

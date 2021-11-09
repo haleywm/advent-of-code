@@ -6,5 +6,5 @@ pub fn line_iter(path: &str) -> io::Result<Lines<BufReader<fs::File>>> {
     let reader = io::BufReader::new(file)
         .lines();
 
-    return Ok(reader);
+    Ok(reader)
 }

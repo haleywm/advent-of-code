@@ -3,7 +3,7 @@ use std::env;
 fn main() {
     let raw_pass = env::args().nth(1).unwrap_or_else(|| String::from("abcdefgh")).into_bytes();
     let pass = Password::new(raw_pass);
-    let mut pass_gen = pass.filter(test_pass);
+    let mut pass_gen = pass.filter(|x| test_pass(x));
     let next_pass = pass_gen.next().expect("Unable to find next password");
     let next_pass = String::from_utf8_lossy(&next_pass);
     println!("{}", next_pass);
@@ -48,7 +48,7 @@ impl Iterator for Password {
     }
 }
 
-fn test_pass(pass: &Vec<u8>) -> bool {
+fn test_pass(pass: &[u8]) -> bool {
     // Tests if a password meets the requirements, and returns true or false
     // Testing rule 1:
     let rule_one = pass

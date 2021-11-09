@@ -6,7 +6,7 @@ use lazy_static::lazy_static;
 fn main() {
     let mut args = env::args();
 
-    let mut number = args.nth(1).unwrap_or(String::from("1"));
+    let mut number = args.nth(1).unwrap_or_else(|| String::from("1"));
     let iter_count: usize = args.next().and_then(|num| num.parse().ok()).unwrap_or(5);
 
     for _ in 0..iter_count {

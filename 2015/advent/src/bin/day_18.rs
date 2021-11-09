@@ -1,14 +1,13 @@
 use std::env;
 use std::cmp;
 
+#[allow(clippy::nonminimal_bool, clippy::needless_range_loop)]
 fn main() {
     let mut args = env::args();
     let size: usize = args.nth(1).and_then(|x| x.parse().ok()).unwrap_or(100);
     let steps: usize = args.next().and_then(|x| x.parse().ok()).unwrap_or(100);
 
-    let mut grids: Vec<Vec<Vec<bool>>> = Vec::with_capacity(2);
-    grids.push(vec![vec![false; size]; size]);
-    grids.push(grids[0].clone());
+    let mut grids: Vec<Vec<Vec<bool>>> = vec![vec![vec![false; size]; size]; 2];
 
     let init_grid = &mut grids[0];
     // Reading input
@@ -33,10 +32,8 @@ fn main() {
                 let mut neighbours = 0;
                 for rel_x in x.saturating_sub(1)..=cmp::min(x + 1, size - 1) {
                     for rel_y in y.saturating_sub(1)..=cmp::min(y + 1, size - 1) {
-                        if rel_x != x || rel_y != y {
-                            if grids[cur][rel_x][rel_y] {
-                                neighbours += 1;
-                            }
+                        if (rel_x != x || rel_y != y) && (grids[cur][rel_x][rel_y]) {
+                            neighbours += 1;
                         }
                     }
                 }
@@ -70,10 +67,8 @@ fn main() {
                 let mut neighbours = 0;
                 for rel_x in x.saturating_sub(1)..=cmp::min(x + 1, size - 1) {
                     for rel_y in y.saturating_sub(1)..=cmp::min(y + 1, size - 1) {
-                        if rel_x != x || rel_y != y {
-                            if grids[cur][rel_x][rel_y] {
-                                neighbours += 1;
-                            }
+                        if (rel_x != x || rel_y != y) && (grids[cur][rel_x][rel_y]) {
+                            neighbours += 1;
                         }
                     }
                 }

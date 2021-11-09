@@ -11,7 +11,7 @@ fn main() {
     // Take lines and parse them until an empty line is found
     let replacements: Vec<(String, String)> = lines
         .by_ref()
-        .take_while(|line| line.len() > 0)
+        .take_while(|line| !line.is_empty())
         .map(|line| {
             let cap = re.captures(&line).expect("Unable to parse line");
             let from = cap.get(1).unwrap().as_str().to_owned();
@@ -28,7 +28,7 @@ fn main() {
 
     for (from, to) in replacements.iter() {
         // Rust doesn't have a built-in find iterator, but as the names can't have special regex chars I can just use regex
-        let finder = Regex::new(&from).unwrap();
+        let finder = Regex::new(from).unwrap();
         for repr in finder.find_iter(&med) {
             let mut new = med.clone();
             new.replace_range(repr.range(), to);
@@ -43,7 +43,7 @@ fn main() {
     let element_count = med.matches(|c: char| c.is_ascii_uppercase()).count();
     let rn_count = med.matches("Rn").count();
     let ar_count = med.matches("Ar").count();
-    let y_count = med.matches("Y").count();
+    let y_count = med.matches('Y').count();
     let fin_tokens = replacements
         .iter()
         .filter_map(|(from, to)| {

@@ -14,21 +14,21 @@ fn main() {
     let weapons: ToolList = lines
         .by_ref()
         .skip(1)
-        .take_while(|l| l.len() > 0)
+        .take_while(|l| !l.is_empty())
         .map(parse_tool)
         .collect();
 
     let mut armor: ToolList = lines
         .by_ref()
         .skip(1)
-        .take_while(|l| l.len() > 0)
+        .take_while(|l| !l.is_empty())
         .map(parse_tool)
         .collect();
 
     let mut rings: ToolList = lines
         .by_ref()
         .skip(1)
-        .take_while(|l| l.len() > 0)
+        .take_while(|l| !l.is_empty())
         .map(parse_tool)
         .collect();
     
@@ -57,7 +57,7 @@ fn main() {
                     rings
                         .iter()
                         .combinations(2)
-                        .map(|rings| (weapons.clone(), armor.clone(), rings[0].clone(), rings[1].clone()))
+                        .map(|rings| (*weapons, *armor, *rings[0], *rings[1]))
                 })
         })
         .flatten()
@@ -75,7 +75,7 @@ fn main() {
         .filter_map(|(cost, damage, armor)| {
             // Doing simulation here, returning the cost of all winning games
             let mut player_stats = (100, damage, armor);
-            let mut boss_stats = boss.clone();
+            let mut boss_stats = boss;
 
             loop {
                 // Player attack
@@ -101,7 +101,7 @@ fn main() {
         .filter_map(|(cost, damage, armor)| {
             // Doing simulation here, returning the cost of all winning games
             let mut player_stats = (100, damage, armor);
-            let mut boss_stats = boss.clone();
+            let mut boss_stats = boss;
 
             loop {
                 // Player attack

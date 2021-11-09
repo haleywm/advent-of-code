@@ -101,10 +101,10 @@ fn main() {
 }
 
 fn parse_ref(raw: &str) -> Value {
-    raw.parse::<u16>().map_or_else(|_| Value::Reference(raw.to_owned()), |num| Value::Literal(num))
+    raw.parse::<u16>().map_or_else(|_| Value::Reference(raw.to_owned()), Value::Literal)
 }
 
-fn eval_key(map: &HashMap<String, Gate>, key: &String) -> Option<u16> {
+fn eval_key(map: &HashMap<String, Gate>, key: &str) -> Option<u16> {
     let gate = map.get(key).unwrap();
 
     match gate {

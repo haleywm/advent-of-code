@@ -47,7 +47,7 @@ fn main() {
                 }
             }
             // If it passed it must fit
-            return true;
+            true
         })
         .expect("Couldn't find a match").0;
     println!("Sue Number {}", sue_one);

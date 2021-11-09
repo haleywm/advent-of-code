@@ -1,6 +1,8 @@
 use std::cmp;
 use regex::Regex;
 
+
+#[allow(clippy::many_single_char_names)]
 fn main() {
     let re = Regex::new(r"^(\w+): capacity (-?\d+), durability (-?\d+), flavor (-?\d+), texture (-?\d+), calories (-?\d+)$").unwrap();
     let cookies: Vec<(i64, i64, i64, i64, i64)> = advent::line_iter("input/day_15.txt")

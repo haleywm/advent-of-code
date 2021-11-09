@@ -14,19 +14,14 @@ fn main() {
     let num = target / 10;
 
     // Making a rudimentary sieve:
-    let mut sieve = Vec::with_capacity(limit);
+    let mut sieve = vec![1; limit];
     let mut lowest: Option<usize> = None;
-    for _ in 0..limit {
-        sieve.push(1);
-    }
 
     for elf in 2..limit {
         for i in (elf..=limit).step_by(elf) {
             sieve[i - 1] += elf;
-            if sieve[i - 1] >= num {
-                if lowest.is_none() || lowest.unwrap() > i {
-                    lowest = Some(i);
-                }
+            if sieve[i - 1] >= num && (lowest.is_none() || lowest.unwrap() > i) {
+                lowest = Some(i);
             }
         }
     }
@@ -38,17 +33,13 @@ fn main() {
 
     // Part 2
     let num = target / 11;
-    for i in 0..limit {
-        sieve[i] = 1;
-    }
+    let mut sieve = vec![1; limit];
     lowest = None;
     for elf in 2..limit {
         for i in (elf..=limit).step_by(elf).take(50) {
             sieve[i - 1] += elf;
-            if sieve[i - 1] >= num {
-                if lowest.is_none() || lowest.unwrap() > i {
-                    lowest = Some(i);
-                }
+            if sieve[i - 1] >= num && (lowest.is_none() || lowest.unwrap() > i) {
+                lowest = Some(i);
             }
         }
     }

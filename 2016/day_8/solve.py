@@ -8,6 +8,7 @@ ROT_PARSE = re.compile(r"^rotate (row y|column x)=(\d+) by (\d+)$")
 WIDTH = 50
 HEIGHT = 6
 
+
 def main() -> None:
     grid = np.zeros((WIDTH, HEIGHT), bool)
     with open("input.txt") as f:
@@ -48,6 +49,7 @@ def main() -> None:
             else:
                 print(" ", end="")
         print("")
+
 
 if __name__ == "__main__":
     main()

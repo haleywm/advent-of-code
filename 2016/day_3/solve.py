@@ -13,7 +13,7 @@ def main() -> None:
     # Part 1
     print(verify_triangle(numbers))
 
-    assert(len(lines) % 3 == 0)
+    assert len(lines) % 3 == 0
     numbers_grouped = chain.from_iterable(
         map(
             lambda x: [

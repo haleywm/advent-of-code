@@ -1,9 +1,11 @@
 import sys, hashlib
 
+
 def main() -> None:
-    assert(len(sys.argv) >= 2)
+    assert len(sys.argv) >= 2
     print(gen_password(sys.argv[1], 5, 8))
     print(gen_v2_password(sys.argv[1], 5, 8))
+
 
 def gen_password(start: str, num_zeroes: int, pass_len: int) -> str:
     start_bytes = start.encode()
@@ -19,6 +21,7 @@ def gen_password(start: str, num_zeroes: int, pass_len: int) -> str:
         index += 1
 
     return cur
+
 
 def gen_v2_password(start: str, num_zeroes: int, pass_len: int) -> str:
     start_bytes = start.encode()
@@ -41,6 +44,7 @@ def gen_v2_password(start: str, num_zeroes: int, pass_len: int) -> str:
                 pass
         index += 1
     return "".join(cur)
+
 
 if __name__ == "__main__":
     main()

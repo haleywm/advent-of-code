@@ -5,17 +5,12 @@ from functools import reduce
 
 ROOM_REG = re.compile(r"^([a-z\-]+)-(\d+)\[([a-z]{5})\]$")
 
+
 def main() -> None:
     with open("input.txt") as file:
         rooms = file.readlines()
-    
-    total = reduce(
-        operator.add,
-        map(
-            get_id,
-            filter(is_valid, rooms)
-        )
-    )
+
+    total = reduce(operator.add, map(get_id, filter(is_valid, rooms)))
 
     # Part 1
     print(total)
@@ -47,15 +42,17 @@ def is_valid(room_name: str) -> bool:
     # Checksum orders first on commonness, then on alphabetisation
     full_checksum = sorted(letters.items(), key=itemgetter(0))
     full_checksum.sort(key=itemgetter(1), reverse=True)
-    checksum = "".join([ i[0] for i in full_checksum[:5] ])
+    checksum = "".join([i[0] for i in full_checksum[:5]])
 
     return checksum == cap.group(3)
+
 
 def get_name(room_name: str) -> Optional[str]:
     cap = ROOM_REG.match(room_name)
     if cap is None:
         return None
     return cap.group(1)
+
 
 def get_id(room_name: str) -> Optional[int]:
     cap = ROOM_REG.match(room_name)
@@ -65,6 +62,7 @@ def get_id(room_name: str) -> Optional[int]:
         return int(cap.group(2))
     except ValueError:
         return None
+
 
 def decrypt_name(name: str, to_shift: int) -> str:
     output = str()
@@ -82,8 +80,9 @@ def decrypt_name(name: str, to_shift: int) -> str:
             output += chr(raw)
         else:
             raise ValueError("Only lowercase ascii and dashes are supported")
-    
+
     return output
+
 
 if __name__ == "__main__":
     main()

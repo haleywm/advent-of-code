@@ -31,7 +31,6 @@ defmodule P2 do
   def move([], {x, y}, _), do: x * y
 end
 
-# Part 1
 P1.move(instructions)
 |> IO.puts()
 

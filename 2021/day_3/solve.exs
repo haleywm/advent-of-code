@@ -8,15 +8,18 @@ defmodule P1 do
   def calculate(list) do
     # Assuming every item in the list is the same length
     last = String.length(hd(list)) - 1
-    gamma = 0..last
-    |> Stream.map(fn pos -> count_binary(list, pos) end)
-    |> Enum.reduce(0, fn next, acc ->
-      next = bti(next * 2 >= length(list))
-      (acc <<< 1) + next
-    end)
-    epsilon = ~~~gamma &&& (Integer.pow(2, last) - 1)
 
-    #IO.inspect([gamma, epsilon])
+    gamma =
+      0..last
+      |> Stream.map(fn pos -> count_binary(list, pos) end)
+      |> Enum.reduce(0, fn next, acc ->
+        next = bti(next * 2 >= length(list))
+        (acc <<< 1) + next
+      end)
+
+    epsilon = ~~~gamma &&& Integer.pow(2, last) - 1
+
+    # IO.inspect([gamma, epsilon])
     gamma * epsilon
   end
 
@@ -32,12 +35,15 @@ end
 
 defmodule P2 do
   def calculate(list) do
-    oxygen = reduce(list, true)
-    |> String.to_integer(2)
-    scrubber = reduce(list, false)
-    |> String.to_integer(2)
+    oxygen =
+      reduce(list, true)
+      |> String.to_integer(2)
 
-    #IO.inspect([oxygen, scrubber])
+    scrubber =
+      reduce(list, false)
+      |> String.to_integer(2)
+
+    # IO.inspect([oxygen, scrubber])
     oxygen * scrubber
   end
 
@@ -50,11 +56,13 @@ defmodule P2 do
     # Find the most or least common number, and filter values that don't match
     pos = String.length(reduced)
     ones = count_binary(list, pos)
-    chosen = bti((ones * 2 >= length(list)) == most_common)
-    |> Integer.to_string
+
+    chosen =
+      bti(ones * 2 >= length(list) == most_common)
+      |> Integer.to_string()
+
     reduced = String.replace_suffix(reduced, "", chosen)
     reduce(Enum.filter(list, &String.starts_with?(&1, reduced)), most_common, reduced)
-    
   end
 
   defp reduce(list, _most_common, _reduced) when length(list) == 1 do

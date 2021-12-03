@@ -4,6 +4,17 @@ numbers =
   File.read!("input.txt")
   |> String.split("\n", trim: true)
 
+defmodule Shared do
+  def bti(true), do: 1
+  def bti(false), do: 0
+
+  def count_binary([next | tail], pos) do
+    String.to_integer(String.at(next, pos), 2) + count_binary(tail, pos)
+  end
+
+  def count_binary([], _pos), do: 0
+end
+
 defmodule P1 do
   def calculate(list) do
     # Assuming every item in the list is the same length
@@ -11,9 +22,9 @@ defmodule P1 do
 
     gamma =
       0..last
-      |> Stream.map(fn pos -> count_binary(list, pos) end)
+      |> Stream.map(fn pos -> Shared.count_binary(list, pos) end)
       |> Enum.reduce(0, fn next, acc ->
-        next = bti(next * 2 >= length(list))
+        next = Shared.bti(next * 2 >= length(list))
         (acc <<< 1) + next
       end)
 
@@ -22,15 +33,6 @@ defmodule P1 do
     # IO.inspect([gamma, epsilon])
     gamma * epsilon
   end
-
-  defp bti(true), do: 1
-  defp bti(false), do: 0
-
-  defp count_binary([next | tail], pos) do
-    String.to_integer(String.at(next, pos), 2) + count_binary(tail, pos)
-  end
-
-  defp count_binary([], _pos), do: 0
 end
 
 defmodule P2 do
@@ -47,18 +49,15 @@ defmodule P2 do
     oxygen * scrubber
   end
 
-  defp bti(true), do: 1
-  defp bti(false), do: 0
-
   defp reduce(list, most_common, reduced \\ "")
 
   defp reduce(list, most_common, reduced) when length(list) > 1 do
     # Find the most or least common number, and filter values that don't match
     pos = String.length(reduced)
-    ones = count_binary(list, pos)
+    ones = Shared.count_binary(list, pos)
 
     chosen =
-      bti(ones * 2 >= length(list) == most_common)
+      Shared.bti(ones * 2 >= length(list) == most_common)
       |> Integer.to_string()
 
     reduced = String.replace_suffix(reduced, "", chosen)
@@ -68,12 +67,6 @@ defmodule P2 do
   defp reduce(list, _most_common, _reduced) when length(list) == 1 do
     hd(list)
   end
-
-  defp count_binary([next | tail], pos) do
-    String.to_integer(String.at(next, pos), 2) + count_binary(tail, pos)
-  end
-
-  defp count_binary([], _pos), do: 0
 end
 
 P1.calculate(numbers)

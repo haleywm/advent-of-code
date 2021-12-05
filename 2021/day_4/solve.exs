@@ -3,6 +3,7 @@ defmodule Bingo do
   Provides a set of functions useful for managing bingo games
   """
   defstruct all_numbers: MapSet.new(), winning_sets: []
+
   @doc """
   Takes an enumerator of strings and turns them into a bingo board
   """
@@ -11,14 +12,15 @@ defmodule Bingo do
     last_index = length(rows) - 1
     all_points = 0..last_index
 
-    columns = for i <- all_points do
-      for j <- all_points, into: %MapSet{}, do: Enum.at(rows, j) |> Enum.at(i)
-    end
+    columns =
+      for i <- all_points do
+        for j <- all_points, into: %MapSet{}, do: Enum.at(rows, j) |> Enum.at(i)
+      end
 
     row_sets = Stream.map(rows, &MapSet.new/1)
 
     # Using a list instead as I can't find a guarantee that all numbers are unique
-    #all_numbers = MapSet.new(Stream.concat(rows))
+    # all_numbers = MapSet.new(Stream.concat(rows))
     all_numbers = Enum.concat(rows)
 
     %Bingo{all_numbers: all_numbers, winning_sets: Enum.concat([row_sets, columns])}
@@ -40,11 +42,14 @@ defmodule Bingo do
     # Iterating through the numbers, building a set, and seeing if it was a winner for each game
     Enum.reduce_while(numbers, MapSet.new(), fn next, acc ->
       selected = MapSet.put(acc, next)
-      winner = Enum.find(boards, fn board ->
-        Enum.any?(board.winning_sets, fn set ->
-          MapSet.subset?(set, selected)
+
+      winner =
+        Enum.find(boards, fn board ->
+          Enum.any?(board.winning_sets, fn set ->
+            MapSet.subset?(set, selected)
+          end)
         end)
-      end)
+
       # Checking if a winner or not
       if is_nil(winner) do
         # No winner
@@ -63,26 +68,34 @@ defmodule Bingo do
     # Iterating through the numbers, building a set, and seeing if it was a winner for each game
     Enum.reduce(numbers, {MapSet.new(), nil, boards}, fn next, {acc, last_win, boards} ->
       selected = MapSet.put(acc, next)
-      winner = Enum.filter(boards, fn board ->
-        Enum.any?(board.winning_sets, fn set ->
-          MapSet.subset?(set, selected)
+
+      winner =
+        Enum.filter(boards, fn board ->
+          Enum.any?(board.winning_sets, fn set ->
+            MapSet.subset?(set, selected)
+          end)
         end)
-      end)
+
       # Checking if a winner or not
       if length(winner) == 0 do
         # No winner
         {selected, last_win, boards}
       else
-        {points, boards} = Enum.reduce(winner, {nil, boards}, fn next, {lowest_score, boards} ->
-          boards = List.delete(boards, next)
-          this_score = get_points(next, selected)
-          lowest_score = if is_nil(lowest_score) || lowest_score > this_score do
-            this_score
-          else
-            lowest_score
-          end
-          {lowest_score, boards}
-        end)
+        {points, boards} =
+          Enum.reduce(winner, {nil, boards}, fn next, {lowest_score, boards} ->
+            boards = List.delete(boards, next)
+            this_score = get_points(next, selected)
+
+            lowest_score =
+              if is_nil(lowest_score) || lowest_score > this_score do
+                this_score
+              else
+                lowest_score
+              end
+
+            {lowest_score, boards}
+          end)
+
         # Winner!
         {selected, points * next, boards}
       end
@@ -98,25 +111,24 @@ defmodule Bingo do
   end
 end
 
-numbers =
-  File.stream!("input.txt")
+numbers = File.stream!("input.txt")
 
 to_select =
-Enum.at(numbers, 0)
-|> then(&Bingo.to_numbers(&1, ","))
+  Enum.at(numbers, 0)
+  |> then(&Bingo.to_numbers(&1, ","))
 
-#IO.inspect(to_select)
+# IO.inspect(to_select)
 
 boards =
-numbers
-|> Stream.drop(2)
-|> Stream.chunk_every(5, 6, :discard)
-|> Enum.map(&Bingo.parse_board/1)
+  numbers
+  |> Stream.drop(2)
+  |> Stream.chunk_every(5, 6, :discard)
+  |> Enum.map(&Bingo.parse_board/1)
 
-#IO.inspect(boards)
+# IO.inspect(boards)
 
 Bingo.get_winner(boards, to_select)
-|> IO.puts
+|> IO.puts()
 
 Bingo.get_loser(boards, to_select)
-|> IO.puts
+|> IO.puts()

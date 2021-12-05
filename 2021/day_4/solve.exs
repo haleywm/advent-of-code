@@ -36,7 +36,7 @@ defmodule Bingo do
   @doc """
   Takes a list of boards, and a list of numbers to draw, in order, and then simualates a game. Returns the score of the winner.
   """
-  def run_game(boards, numbers) do
+  def get_winner(boards, numbers) do
     # Iterating through the numbers, building a set, and seeing if it was a winner for each game
     Enum.reduce_while(numbers, MapSet.new(), fn next, acc ->
       selected = MapSet.put(acc, next)
@@ -51,9 +51,43 @@ defmodule Bingo do
         {:cont, selected}
       else
         # Winner!
-        {:halt, get_points(winner, numbers) * next}
+        {:halt, get_points(winner, selected) * next}
       end
     end)
+  end
+
+  @doc """
+  Takes a list of boards, and a list of numbers to draw, in order, and then simualates a game. Returns the score of the last board to win.
+  """
+  def get_loser(boards, numbers) do
+    # Iterating through the numbers, building a set, and seeing if it was a winner for each game
+    Enum.reduce(numbers, {MapSet.new(), nil, boards}, fn next, {acc, last_win, boards} ->
+      selected = MapSet.put(acc, next)
+      winner = Enum.filter(boards, fn board ->
+        Enum.any?(board.winning_sets, fn set ->
+          MapSet.subset?(set, selected)
+        end)
+      end)
+      # Checking if a winner or not
+      if length(winner) == 0 do
+        # No winner
+        {selected, last_win, boards}
+      else
+        {points, boards} = Enum.reduce(winner, {nil, boards}, fn next, {lowest_score, boards} ->
+          boards = List.delete(boards, next)
+          this_score = get_points(next, selected)
+          lowest_score = if is_nil(lowest_score) || lowest_score > this_score do
+            this_score
+          else
+            lowest_score
+          end
+          {lowest_score, boards}
+        end)
+        # Winner!
+        {selected, points * next, boards}
+      end
+    end)
+    |> elem(1)
   end
 
   @doc """
@@ -81,5 +115,8 @@ numbers
 
 #IO.inspect(boards)
 
-Bingo.run_game(boards, to_select)
+Bingo.get_winner(boards, to_select)
+|> IO.puts
+
+Bingo.get_loser(boards, to_select)
 |> IO.puts

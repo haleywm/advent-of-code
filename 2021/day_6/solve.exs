@@ -1,43 +1,25 @@
 defmodule FishSim do
   # Simulating fish
-  # Couldn't find a cheaty mathematical model
-  # But for optimisation will instead calculate a standard growth model for how a single fish would reprodce for each day
-  # And use that to get the sums of fish
+  # Use a list that keeps track of how many fish are in each day of growth
 
-  # In this simplified model, day 1 starts with a fish with a score of 8, and goes from there
-  @doc """
-  Generates a map containing how many fish would result from a single fish, going from 0 to total_days
-  """
-  def gen_fish_map(total_days) do
-    {_, map} =
-      Enum.reduce(0..total_days, {[8], Map.new()}, fn day, {list, cur_map} ->
-        {progress_list(list), Map.put(cur_map, day, length(list))}
-      end)
-
-    map
+  defp progress_list([hatching | tail], days) when days > 0 do
+    new = List.insert_at(tail, 8, hatching)
+    add = hatching + Enum.at(new, 6)
+    progress_list(List.replace_at(new, 6, add), days - 1)
   end
 
-  defp progress_list([0 | tail]) do
-    [6 | [8 | progress_list(tail)]]
-  end
-
-  defp progress_list([num | tail]) do
-    [num - 1 | progress_list(tail)]
-  end
-
-  defp progress_list([]) do
-    []
+  defp progress_list(list, _days) do
+    Enum.sum(list)
   end
 
   @doc """
   Takes a list of days until fish first spawn, and a map of fish that contains at least until those days
   And returns a total
   """
-  def get_fish_total(fish_list, fish_map, day) do
-    Stream.map(fish_list, fn fish ->
-      Map.get(fish_map, day + 8 - fish)
-    end)
-    |> Enum.sum()
+  def get_fish_total(fish_list, days) do
+    freq = Enum.frequencies(fish_list)
+    fish = for n <- 0..8, do: Map.get(freq, n, 0)
+    progress_list(fish, days)
   end
 end
 
@@ -51,9 +33,5 @@ target =
   Enum.at(System.argv(), 0, "80")
   |> String.to_integer()
 
-highest_needed = 8 - Enum.min(fish) + target
-
-map = FishSim.gen_fish_map(highest_needed)
-
-FishSim.get_fish_total(fish, map, target)
+FishSim.get_fish_total(fish, target)
 |> IO.puts()

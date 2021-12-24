@@ -1,16 +1,19 @@
+use itertools::Itertools;
+use std::collections::VecDeque;
 use std::fs;
 use std::io::{self, BufRead};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 enum Snailfish {
     Num(i64),
-    Pair(Box<Snailfish>, Box<Snailfish>),
+    OpenBracket,
+    CloseBracket,
 }
 
 fn main() {
     let file = fs::File::open("input/day_18.txt").expect("Invalid Filename");
 
-    let items: Vec<Snailfish> = io::BufReader::new(file)
+    let items: Vec<VecDeque<Snailfish>> = io::BufReader::new(file)
         .lines()
         .map(|line| {
             let line = line.unwrap();
@@ -18,81 +21,127 @@ fn main() {
         })
         .collect();
 
+    // Part 1
     let sum = items
-        .into_iter()
-        .reduce(|acc, cur| {
-            add_snailfish(acc, cur)
-        })
+        .iter()
+        .cloned()
+        .reduce(|acc, cur| add_snailfish(acc, cur))
         .unwrap();
-    
-    println!("{:?}", sum);
+
+    println!("{}", get_magnitude(&sum));
+
+    // Part 2
+    let max = items
+        .iter()
+        .permutations(2)
+        .map(|x| get_magnitude(&add_snailfish(x[0].clone(), x[1].clone())))
+        .max()
+        .unwrap();
+
+    println!("{}", max);
 }
 
-fn parse_snailfish(input: &str) -> Snailfish {
-    // Recursively parse a snailfish string
-    // Test if given section is a number
-    let num = input.parse::<i64>();
-    if let Ok(number) = num {
-        Snailfish::Num(number)
-    }
-    else {
-        // Stripping external brackets, panicking if they aren't there
-        let input = input.strip_prefix("[").unwrap();
-        let input = input.strip_suffix("]").unwrap();
-        let first_end = find_end(input);
-        let second_end = find_end(&input[(first_end + 1)..]);
-        let first_part = &input[..first_end];
-        let second_part = &input[(first_end + 1)..(first_end + 1 + second_end)];
-
-        Snailfish::Pair(Box::new(parse_snailfish(first_part)), Box::new(parse_snailfish(second_part)))
-    }
+fn parse_snailfish(line: &str) -> VecDeque<Snailfish> {
+    line.chars()
+        .filter_map(|x| match x {
+            '[' => Some(Snailfish::OpenBracket),
+            ']' => Some(Snailfish::CloseBracket),
+            ',' => None,
+            x => Some(Snailfish::Num(x.to_digit(10).unwrap() as i64)),
+        })
+        .collect()
 }
 
-fn find_end(input: &str) -> usize {
-    // Crawls given input to find the end
-    // Stops when it finds a comma not inside a bracket, or the end of string
-    // Panics if invalid number of brackets
-    let mut bracket_depth: i32 = 0;
-    let mut end = 0;
-    for cur in input.as_bytes() {
-        match *cur {
-            b'[' => bracket_depth += 1,
-            b']' => bracket_depth -= 1,
-            b',' => {
-                if bracket_depth == 0 {
-                    break;
+fn add_snailfish(mut a: VecDeque<Snailfish>, mut b: VecDeque<Snailfish>) -> VecDeque<Snailfish> {
+    a.append(&mut b);
+    a.push_front(Snailfish::OpenBracket);
+    a.push_back(Snailfish::CloseBracket);
+
+    reduce_snailfish(&mut a);
+
+    a
+}
+
+fn reduce_snailfish(list: &mut VecDeque<Snailfish>) {
+    while explode_snailfish(list) || split_snailfish(list) {}
+}
+
+fn explode_snailfish(list: &mut VecDeque<Snailfish>) -> bool {
+    let mut depth = 0;
+
+    for (pos, cur) in list.iter().enumerate() {
+        match cur {
+            Snailfish::OpenBracket => depth += 1,
+            Snailfish::CloseBracket => depth -= 1,
+            Snailfish::Num(_) => {
+                if depth > 4 && matches!(list[pos + 1], Snailfish::Num(_)) {
+                    let left = match list[pos] {
+                        Snailfish::Num(x) => x,
+                        _ => panic!("Uh oh"),
+                    };
+                    let right = match list[pos + 1] {
+                        Snailfish::Num(x) => x,
+                        _ => panic!("Uh oh"),
+                    };
+                    assert_eq!(list.remove(pos - 1), Some(Snailfish::OpenBracket));
+                    assert_eq!(list.remove(pos + 1), Some(Snailfish::CloseBracket));
+                    list.remove(pos);
+                    list[pos - 1] = Snailfish::Num(0);
+                    let to_skip = list.len() - pos + 1;
+                    for item in list.iter_mut().rev().skip(to_skip) {
+                        if let Snailfish::Num(val) = item {
+                            *item = Snailfish::Num(*val + left);
+                            break;
+                        }
+                    }
+                    for item in list.iter_mut().skip(pos) {
+                        if let Snailfish::Num(val) = item {
+                            *item = Snailfish::Num(*val + right);
+                            break;
+                        }
+                    }
+                    return true;
                 }
-            },
+            }
+        }
+    }
+
+    false
+}
+
+fn split_snailfish(list: &mut VecDeque<Snailfish>) -> bool {
+    for (i, cur) in list.iter().enumerate() {
+        if let Snailfish::Num(x) = *cur {
+            if x > 9 {
+                let left = x / 2;
+                let right = x - left;
+
+                list[i] = Snailfish::Num(left);
+                list.insert(i + 1, Snailfish::Num(right));
+                list.insert(i, Snailfish::OpenBracket);
+                list.insert(i + 3, Snailfish::CloseBracket);
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
+fn get_magnitude(list: &VecDeque<Snailfish>) -> i64 {
+    let mut stack = Vec::new();
+    for item in list {
+        match *item {
+            Snailfish::Num(x) => stack.push(x),
+            Snailfish::CloseBracket => {
+                let a = stack.pop().unwrap();
+                let b = stack.pop().unwrap();
+                stack.push(2 * a + 3 * b);
+            }
             _ => {}
         }
-        end += 1;
     }
-    if bracket_depth != 0 {
-        panic!("Invalid string: {}", input);
-    }
-    end
-}
 
-fn add_snailfish(a: Snailfish, b: Snailfish) -> Snailfish {
-    // Returns the sum of two snailfish
-    Snailfish::Pair(Box::new(a), Box::new(b))
-    // TODO: Exploding and splitting
-}
-
-fn try_explode(cur: &mut Snailfish, level: usize) -> (Option<i64>, Option<i64>) {
-    // Tries to explode something if possible recursively
-    match cur {
-        Snailfish::Num(_) => (None, None),
-        Snailfish::Pair(mut a, mut b) => {
-            if level >= 4 {
-                (None, None)
-
-            }
-            else {
-                let res = try_explode(&mut a, level + 1);
-
-                (None, None)
-            }
-        }
-    }
+    assert_eq!(stack.len(), 1);
+    stack.pop().unwrap()
 }
